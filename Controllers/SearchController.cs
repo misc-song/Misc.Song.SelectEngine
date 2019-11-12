@@ -29,13 +29,32 @@ namespace Misc.Song.SelectEngine.Controllers
             var pageIndex = HttpContext.Request.Query["pageIndex"].ToString();
             List<string> str = new List<string>();
             str.Add("parameter error");
-            if (string.IsNullOrEmpty(pageSize) || string.IsNullOrEmpty(pageIndex) || string.IsNullOrEmpty(keyword))
+            if (string.IsNullOrEmpty(pageSize) || string.IsNullOrEmpty(pageIndex))
             {
                 return new JsonResult(new { data = str, returnCode = ErrorCode.ParameterError, totalNum = 0 });
             }
             keyword = keyword.Trim();
             int pindex = int.Parse(pageIndex);
             int psize = int.Parse(pageSize);
+            if (string.IsNullOrEmpty(keyword))
+            {
+                var total = sysDbContext.Database.SqlQuery($"select count(*) from book.b2 where 1=1").Rows[0].ItemArray[0];
+                var offset = psize * (pindex - 1);
+                var temp2 = sysDbContext.b2.FromSql($"select * from ( SELECT * FROM book.b2 as book   where 1=1 limit {offset}, {psize} ) as t  order by(t.id)", offset, psize);
+                return new JsonResult(new { result = temp2, total, returnCode = ErrorCode.Sucess }); 
+            }
+            else
+            {
+                //var temp = sysDbContext.b2.FromSql($"select * from book.b2 where title like '{ keyword }%' ", keyword);
+                //获取总的记录数
+                var total = sysDbContext.Database.SqlQuery($"select count(*) from book.b2 where title like '{ keyword }%'").Rows[0].ItemArray[0];
+                var offset = psize * (pindex - 1);  //偏移量 跳过数据条数
+                                                    //构建分页sql语句 （后期会使用 存储过程）
+                var temp2 = sysDbContext.b2.FromSql($"select * from ( SELECT * FROM book.b2 as book   where title like '{keyword}%' limit {offset}, {psize} ) as t  order by(t.id)", keyword, offset, psize);
+                //使用sql来计算count 增加查询效率
+                //var res = temp.OrderBy(u => u.id).Skip(psize * (pindex - 1)).Take(psize);
+                return new JsonResult(new { result = temp2, total, returnCode = ErrorCode.Sucess }); // 返回json数据
+            }
             #region MyRegion
             //var temp = from i in sysDbContext.b2 where i.title.StartsWith("广") select i;
             //var temp = sysDbContext.b2.Where(u => u.title.StartsWith(keyword));
@@ -43,18 +62,6 @@ namespace Misc.Song.SelectEngine.Controllers
             //var totalNum = temp.Count(); 
             //string par = "select * from book.b2 where title like '%" + keyword + "%'";
             #endregion
-            //var temp = sysDbContext.b2.FromSql($"select * from book.b2 where title like '{ keyword }%' ", keyword);
-
-            //获取总的记录数
-            var totalNum = sysDbContext.Database.SqlQuery($"select count(*) from book.b2 where title like '{ keyword }%'").Rows[0].ItemArray[0];
-            var offset = psize * (pindex - 1);  //偏移量 跳过数据条数
-            //构建分页sql语句 （后期会使用 存储过程）
-            var temp2 = sysDbContext.b2.FromSql($"select * from ( SELECT * FROM book.b2 as book   where title like '{keyword}%' limit {offset}, {psize} ) as t  order by(t.id)", keyword, offset, psize);
-            //使用sql来计算count 增加查询效率
-
-            //var res = temp.OrderBy(u => u.id).Skip(psize * (pindex - 1)).Take(psize);
-            return new JsonResult(new { data = temp2, totalNum, returnCode = ErrorCode.Sucess }); // 返回json数据
-            //SELECT * FROM book.b2 where title like '家%' limit 1,100;
         }
     }
 }
