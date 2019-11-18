@@ -41,7 +41,7 @@ namespace Misc.Song.SelectEngine.Controllers
                 var total = sysDbContext.Database.SqlQuery($"select count(*) from book.b2 where 1=1").Rows[0].ItemArray[0];
                 var offset = psize * (pindex - 1);
                 var temp2 = sysDbContext.b2.FromSql($"select * from ( SELECT * FROM book.b2 as book   where 1=1 limit {offset}, {psize} ) as t  order by(t.id)", offset, psize);
-                return new JsonResult(new { result = temp2, total, returnCode = ErrorCode.Sucess }); 
+                return new JsonResult(new { result = temp2, total, returnCode = ErrorCode.Sucess });
             }
             else
             {
@@ -53,7 +53,7 @@ namespace Misc.Song.SelectEngine.Controllers
                 var temp2 = sysDbContext.b2.FromSql($"select * from ( SELECT * FROM book.b2 as book   where title like '{keyword}%' limit {offset}, {psize} ) as t  order by(t.id)", keyword, offset, psize);
                 //使用sql来计算count 增加查询效率
                 //var res = temp.OrderBy(u => u.id).Skip(psize * (pindex - 1)).Take(psize);
-                return new JsonResult(new { result = temp2, total, returnCode = ErrorCode.Sucess }); // 返回json数据
+                return new JsonResult(new { result = temp2, total = (int)total / psize, returnCode = ErrorCode.Sucess }); // 返回json数据
             }
             #region MyRegion
             //var temp = from i in sysDbContext.b2 where i.title.StartsWith("广") select i;
